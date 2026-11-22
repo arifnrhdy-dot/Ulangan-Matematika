@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MathExam CBT - Dashboard Guru</title>
+
+  <!-- Font Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- KaTeX untuk Render Rumus Matematika -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <!-- SheetJS (XLSX/CSV), Mammoth (DOCX), PDF.js (PDF) untuk Impor Soal -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+
+    .katex {
+      font-size: 1.05em;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- ==================== 1. NAVBAR GURU ==================== -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm shrink-0">
+          \(\Sigma\)
+        </div>
+        <div class="truncate">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-900 text-base sm:text-lg truncate">MathExam CBT</span>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Dashboard Guru
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 truncate">Kelola Nilai, Bank Soal, Impor File & Konfigurasi</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <a
+          href="./index.html"
+          class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition"
+        >
+          Portal Siswa
+        </a>
+        <button
+          id="lockTeacherBtn"
+          type="button"
+          onclick="lockTeacherDashboard()"
+          class="hidden px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition cursor-pointer"
+        >
+          Kunci Panel
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 2. KONTEN UTAMA ==================== -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+    <!-- Banner Notifikasi -->
+    <div id="globalAlertBox" class="hidden mb-6 rounded-2xl border px-4 py-3.5 text-sm font-medium flex items-start justify-between gap-3">
+      <div id="globalAlertText" class="flex-1"></div>
+      <button type="button" onclick="hideAlert()" class="text-xs font-bold opacity-70 hover:opacity-100 cursor-pointer">✕</button>
+    </div>
+
+    <!-- ---------------- VIEW A: KUNCI MASUK GURU ---------------- -->
+    <section id="teacherAuthSection" class="max-w-md mx-auto">
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 font-extrabold text-xl flex items-center justify-center mb-4">
+          🔒
+        </div>
+        <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900">Masuk Dashboard Guru</h1>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          Halaman khusus pengajar. Jangan bagikan tautan <code class="font-semibold">guru.html</code> ke grup siswa.
+        </p>
+
+        <form onsubmit="unlockTeacherDashboard(event)" class="mt-5 space-y-4">
+          <div>
+            <label for="teacherPinInput" class="block text-sm font-semibold text-slate-700 mb-1.5">
+              PIN Pengajar
+            </label>
+            <input
+              id="teacherPinInput"
+              type="password"
+              required
+              placeholder="Masukkan PIN pengajar"
+              class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm transition"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition cursor-pointer"
+          >
+            Buka Dashboard Guru →
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ---------------- VIEW B: DASHBOARD GURU AKTIF ---------------- -->
+    <section id="teacherDashboardSection" class="hidden space-y-6">
+
+      <!-- Ringkasan Statistik -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
+          <div class="text-xs font-semibold text-slate-500">Total Rekap Masuk</div>
+          <div id="statTotalScores" class="text-2xl font-extrabold text-slate-900 mt-1">0</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
+          <div class="text-xs font-semibold text-slate-500">Rata-Rata Nilai</div>
+          <div id="statAvgScore" class="text-2xl font-extrabold text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
+          <div class="text-xs font-semibold text-slate-500">Jumlah Soal di Bank</div>
+          <div id="statTotalQuestions" class="text-2xl font-extrabold text-emerald-600 mt-1">0</div>
+        </div>
+      </div>
+
+      <!-- Tab Navigasi -->
+      <div class="flex flex-wrap gap-2">
+        <button
+          id="tabBtnScores"
+          type="button"
+          onclick="switchTeacherTab('scores')"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 text-white transition cursor-pointer"
+        >
+          Rekap Nilai & Pelanggaran
+        </button>
+        <button
+          id="tabBtnBank"
+          type="button"
+          onclick="switchTeacherTab('bank')"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+        >
+          Bank Soal & Impor File
+        </button>
+        <button
+          id="tabBtnSettings"
+          type="button"
+          onclick="switchTeacherTab('settings')"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+        >
+          Pengaturan Ujian
+        </button>
+      </div>
+
+      <!-- TAB 1: REKAP NILAI -->
+      <div id="teacherTabScores" class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <select
+              id="filterGradeSelect"
+              onchange="handleFilterGradeChange()"
+              class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white"
+            >
+              <option value="">Semua Tingkatan (7–9)</option>
+              <option value="7">Kelas 7</option>
+              <option value="8">Kelas 8</option>
+              <option value="9">Kelas 9</option>
+            </select>
+
+            <select
+              id="filterClassSelect"
+              onchange="renderTeacherScores()"
+              class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white"
+            >
+              <option value="">Semua Kelas</option>
+            </select>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onclick="renderTeacherScores()"
+              class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition cursor-pointer"
+            >
+              ↻ Muat Ulang
+            </button>
+            <button
+              type="button"
+              onclick="exportScoresCSV()"
+              class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold transition cursor-pointer"
+            >
+              ⬇ Export CSV
+            </button>
+            <button
+              type="button"
+              onclick="clearAllScores()"
+              class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs sm:text-sm font-bold transition cursor-pointer"
+            >
+              Hapus Rekap
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">No</th>
+                <th class="py-3 px-4">Nama Siswa</th>
+                <th class="py-3 px-4">Tingkat</th>
+                <th class="py-3 px-4">Kelas</th>
+                <th class="py-3 px-4">Skor</th>
+                <th class="py-3 px-4">Benar</th>
+                <th class="py-3 px-4">Pelanggaran</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Waktu</th>
+              </tr>
+            </thead>
+            <tbody id="scoresTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: BANK SOAL & IMPOR -->
+      <div id="teacherTabBank" class="hidden space-y-6">
+        <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Impor Soal Otomatis ke Bank Soal</h2>
+              <p class="text-xs text-slate-500">Mendukung file Excel/CSV (`.xlsx`, `.csv`), Word (`.docx`), PDF (`.pdf`), atau tempel teks langsung.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onclick="downloadExcelTemplate()"
+                class="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition cursor-pointer"
+              >
+                ⬇ Template Excel
+              </button>
+              <button
+                type="button"
+                onclick="downloadWordTemplate()"
+                class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition cursor-pointer"
+              >
+                ⬇ Template Word (.doc)
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="flex flex-col items-center justify-center border-2 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50/40 rounded-2xl p-6 text-center cursor-pointer transition">
+              <span class="text-2xl mb-2">📂</span>
+              <span class="text-sm font-bold text-indigo-900">Pilih File Soal (PDF, DOCX, XLSX, CSV)</span>
+              <span id="importFileNameLabel" class="text-xs text-slate-500 mt-1">Klik untuk memilih file dari perangkat</span>
+              <input
+                id="questionImportFileInput"
+                type="file"
+                accept=".xlsx,.xls,.csv,.docx,.doc,.pdf,.txt"
+                onchange="handleImportFileSelected(event)"
+                class="hidden"
+              />
+            </label>
+
+            <div class="space-y-2">
+              <textarea
+                id="rawTextImportInput"
+                rows="4"
+                placeholder="Atau tempel teks soal di sini. Contoh:&#10;1. Hasil dari 3^2 + 4^2 adalah...&#10;A. 12&#10;B. 14&#10;*C. 25&#10;D. 49&#10;Pembahasan: 9 + 16 = 25."
+                class="w-full p-3 rounded-2xl border border-slate-300 focus:border-indigo-500 outline-none text-xs"
+              ></textarea>
+              <button
+                type="button"
+                onclick="parseRawTextToPreview()"
+                class="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition cursor-pointer"
+              >
+                Proses Teks ke Pratinjau Impor
+              </button>
+            </div>
+          </div>
+
+          <div id="importPreviewSection" class="hidden mt-6 pt-6 border-t border-slate-200 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-sm font-extrabold text-slate-900">
+                Pratinjau Soal Terdeteksi (<span id="previewCountSpan">0</span> soal)
+              </h3>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onclick="commitImportedQuestions('append')"
+                  class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer"
+                >
+                  + Tambahkan ke Bank Soal
+                </button>
+                <button
+                  type="button"
+                  onclick="commitImportedQuestions('replace')"
+                  class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition cursor-pointer"
+                >
+                  ↻ Ganti Semua Bank Soal
+                </button>
+                <button
+                  type="button"
+                  onclick="cancelImportPreview()"
+                  class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+            <div id="importPreviewList" class="space-y-3 max-h-96 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs">
+          <h2 class="text-base sm:text-lg font-extrabold text-slate-900 mb-3">Tambah Soal Manual</h2>
+
+          <div class="flex flex-wrap items-center gap-1.5 mb-3">
+            <span class="text-xs font-semibold text-slate-500 mr-1">Sisip Rumus:</span>
+            <button type="button" onclick="insertMathSnippet('$\\frac{a}{b}$')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 text-xs font-semibold cursor-pointer">Pecahan</button>
+            <button type="button" onclick="insertMathSnippet('$x^2$')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 text-xs font-semibold cursor-pointer">Pangkat</button>
+            <button type="button" onclick="insertMathSnippet('$\\sqrt{x}$')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 text-xs font-semibold cursor-pointer">Akar</button>
+            <button type="button" onclick="insertMathSnippet('$\\pi$')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 text-xs font-semibold cursor-pointer">Pi (π)</button>
+          </div>
+
+          <form onsubmit="addManualQuestion(event)" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Topik Materi</label>
+                <input id="newQTopic" type="text" value="Aljabar" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Pertanyaan Soal</label>
+                <input id="newQPrompt" type="text" required placeholder="Contoh: Jika $2x + 5 = 15$, maka nilai $x$ adalah..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input id="newOpt0" type="text" required placeholder="Pilihan A" class="px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+              <input id="newOpt1" type="text" required placeholder="Pilihan B" class="px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+              <input id="newOpt2" type="text" required placeholder="Pilihan C" class="px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+              <input id="newOpt3" type="text" required placeholder="Pilihan D" class="px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Kunci Jawaban</label>
+                <select id="newQAnswer" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white">
+                  <option value="0">Pilihan A</option>
+                  <option value="1">Pilihan B</option>
+                  <option value="2">Pilihan C</option>
+                  <option value="3">Pilihan D</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Pembahasan</label>
+                <input id="newQExplanation" type="text" placeholder="Langkah penyelesaian singkat..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+              </div>
+            </div>
+
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition cursor-pointer">
+              + Simpan ke Bank Soal
+            </button>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+              Daftar Soal Aktif (<span id="bankCountBadge">0</span> Soal)
+            </h2>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onclick="exportQuestionsJSON()"
+                class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition cursor-pointer"
+              >
+                ⬇ Export Bank Soal (.json)
+              </button>
+              <button
+                type="button"
+                onclick="resetDefaultQuestions()"
+                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+              >
+                Reset Soal Bawaan
+              </button>
+            </div>
+          </div>
+          <div id="questionBankList" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- TAB 3: PENGATURAN UJIAN -->
+      <div id="teacherTabSettings" class="hidden bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs max-w-2xl">
+        <h2 class="text-base sm:text-lg font-extrabold text-slate-900 mb-4">Pengaturan Ulangan Harian</h2>
+        <form onsubmit="saveExamSettings(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Judul Ulangan</label>
+            <input id="cfgTitle" type="text" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Token Ujian</label>
+              <input id="cfgToken" type="text" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm uppercase font-bold" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Durasi (Menit)</label>
+              <input id="cfgDuration" type="number" min="1" max="240" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Batas Pelanggaran</label>
+              <input id="cfgMaxViolations" type="number" min="1" max="20" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">PIN Masuk Dashboard Guru</label>
+              <input id="cfgTeacherPin" type="text" minlength="4" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono" />
+            </div>
+            <div class="flex items-end pb-2">
+              <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                <input id="cfgShowReview" type="checkbox" class="w-4 h-4 rounded text-indigo-600" />
+                Tampilkan pembahasan setelah selesai
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition cursor-pointer">
+            Simpan Pengaturan
+          </button>
+        </form>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ==================== 3. LOGIKA DASHBOARD GURU ==================== -->
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    }
+
+    const CLASS_SECTIONS = {
+      '7': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+      '8': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+      '9': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+    };
+
+    const STORAGE_KEYS = {
+      CONFIG: 'mathexam_config_v1',
+      QUESTIONS: 'mathexam_questions_v1',
+      SCORES: 'mathexam_scores_v1',
+    };
+
+    const DEFAULT_CONFIG = {
+      title: 'Ulangan Harian Matematika',
+      subject: 'Mata Pelajaran Matematika • SMP/MTs (Kelas 7–9)',
+      token: 'MTK8',
+      durationMinutes: 20,
+      maxViolations: 3,
+      teacherPin: '1234',
+      showReview: true,
+    };
+
+    const DEFAULT_QUESTIONS = [
+      {
+        id: 'q1',
+        topic: 'Bilangan Bulat & Pangkat',
+        prompt: 'Hasil dari $3^2 + 4^2$ adalah...',
+        options: ['12', '14', '25', '49'],
+        answerIndex: 2,
+        explanation: '$3^2 = 9$ dan $4^2 = 16$, sehingga $9 + 16 = 25$.',
+      },
+      {
+        id: 'q2',
+        topic: 'Aljabar',
+        prompt: 'Jika $2x + 6 = 18$, maka nilai $x$ adalah...',
+        options: ['4', '6', '8', '12'],
+        answerIndex: 1,
+        explanation: '$2x = 18 - 6 = 12$, maka $x = \\frac{12}{2} = 6$.',
+      },
+      {
+        id: 'q3',
+        topic: 'Akar Kuadrat',
+        prompt: 'Bentuk sederhana dari $\\sqrt{48}$ adalah...',
+        options: ['$2\\sqrt{6}$', '$4\\sqrt{3}$', '$6\\sqrt{2}$', '$8\\sqrt{3}$'],
+        answerIndex: 1,
+        explanation: '$\\sqrt{48} = \\sqrt{16 \\times 3} = 4\\sqrt{3}$.',
+      },
+      {
+        id: 'q4',
+        topic: 'Pecahan',
+        prompt: 'Hasil dari $\\frac{3}{4} + \\frac{1}{6}$ adalah...',
+        options: ['$\\frac{4}{10}$', '$\\frac{11}{12}$', '$\\frac{5}{12}$', '$\\frac{7}{12}$'],
+        answerIndex: 1,
+        explanation: 'Samakan penyebut menjadi 12: $\\frac{9}{12} + \\frac{2}{12} = \\frac{11}{12}$.',
+      },
+      {
+        id: 'q5',
+        topic: 'Teorema Pythagoras',
+        prompt: 'Segitiga siku-siku memiliki sisi siku-siku $6\\text{ cm}$ dan $8\\text{ cm}$. Panjang sisi miringnya adalah...',
+        options: ['10 cm', '12 cm', '14 cm', '100 cm'],
+        answerIndex: 0,
+        explanation: '$c = \\sqrt{6^2 + 8^2} = \\sqrt{36 + 64} = \\sqrt{100} = 10\\text{ cm}$.',
+      },
+      {
+        id: 'q6',
+        topic: 'Persamaan Garis',
+        prompt: 'Gradien garis dengan persamaan $y = 4x - 7$ adalah...',
+        options: ['-7', '-4', '4', '7'],
+        answerIndex: 2,
+        explanation: 'Bentuk umum $y = mx + c$, sehingga gradien $m = 4$.',
+      },
+    ];
+
+    let importedPreviewList = [];
+    let failedPinAttempts = 0;
+    let pinLockUntil = 0;
+
+    function loadJSON(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function saveJSON(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        console.error('Gagal menyimpan data:', e);
+      }
+    }
+
+    function getConfig() {
+      return { ...DEFAULT_CONFIG, ...loadJSON(STORAGE_KEYS.CONFIG, DEFAULT_CONFIG) };
+    }
+
+    function getQuestions() {
+      const list = loadJSON(STORAGE_KEYS.QUESTIONS, DEFAULT_QUESTIONS);
+      return Array.isArray(list) && list.length > 0 ? list : DEFAULT_QUESTIONS;
+    }
+
+    function getScores() {
+      const list = loadJSON(STORAGE_KEYS.SCORES, []);
+      return Array.isArray(list) ? list : [];
+    }
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function showAlert(message, type = 'info') {
+      const box = document.getElementById('globalAlertBox');
+      const text = document.getElementById('globalAlertText');
+      if (!box || !text) return;
+
+      const styles = {
+        info: 'bg-indigo-50 border-indigo-200 text-indigo-900',
+        success: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+        warning: 'bg-amber-50 border-amber-200 text-amber-900',
+        error: 'bg-rose-50 border-rose-200 text-rose-900',
+      };
+
+      box.className = `mb-6 rounded-2xl border px-4 py-3.5 text-sm font-medium flex items-start justify-between gap-3 ${styles[type] || styles.info}`;
+      text.innerHTML = message;
+      box.classList.remove('hidden');
+    }
+
+    function hideAlert() {
+      const box = document.getElementById('globalAlertBox');
+      if (box) box.classList.add('hidden');
+    }
+
+    function renderMath(targetEl = document.body) {
+      if (!targetEl) return;
+      if (typeof renderMathInElement === 'function') {
+        try {
+          renderMathInElement(targetEl, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true },
+            ],
+            throwOnError: false,
+          });
+        } catch (err) {
+          // Abaikan error parse rumus agar tampilan tetap aman
+        }
+      }
+    }
+
+    // ==================== AUTENTIKASI GURU ====================
+    function unlockTeacherDashboard(event) {
+      event.preventDefault();
+      hideAlert();
+
+      const now = Date.now();
+      if (pinLockUntil > now) {
+        const sisaDetik = Math.ceil((pinLockUntil - now) / 1000);
+        showAlert(`Terlalu banyak percobaan PIN salah. Tunggu <strong>${sisaDetik} detik</strong> lalu coba lagi.`, 'warning');
+        return;
+      }
+
+      const cfg = getConfig();
+      const inputPin = document.getElementById('teacherPinInput').value.trim();
+
+      if (inputPin !== cfg.teacherPin) {
+        failedPinAttempts += 1;
+        if (failedPinAttempts >= 3) {
+          pinLockUntil = Date.now() + 30000;
+          failedPinAttempts = 0;
+          showAlert('PIN salah 3 kali. Akses dikunci sementara selama <strong>30 detik</strong>.', 'error');
+        } else {
+          showAlert(`PIN pengajar salah (percobaan ${failedPinAttempts}/3).`, 'error');
+        }
+        return;
+      }
+
+      failedPinAttempts = 0;
+      pinLockUntil = 0;
+      document.getElementById('teacherPinInput').value = '';
+      document.getElementById('teacherAuthSection').classList.add('hidden');
+      document.getElementById('teacherDashboardSection').classList.remove('hidden');
+      document.getElementById('lockTeacherBtn').classList.remove('hidden');
+
+      updateDashboardStats();
+      switchTeacherTab('scores');
+    }
+
+    function lockTeacherDashboard() {
+      document.getElementById('teacherDashboardSection').classList.add('hidden');
+      document.getElementById('lockTeacherBtn').classList.add('hidden');
+      document.getElementById('teacherAuthSection').classList.remove('hidden');
+      hideAlert();
+    }
+
+    function updateDashboardStats() {
+      const scores = getScores();
+      const questions = getQuestions();
+      const totalEl = document.getElementById('statTotalScores');
+      const avgEl = document.getElementById('statAvgScore');
+      const qEl = document.getElementById('statTotalQuestions');
+
+      if (totalEl) totalEl.textContent = scores.length;
+      if (avgEl) {
+        if (scores.length === 0) {
+          avgEl.textContent = '0';
+        } else {
+          const sum = scores.reduce((acc, r) => acc + (Number(r.score) || 0), 0);
+          avgEl.textContent = (sum / scores.length).toFixed(1);
+        }
+      }
+      if (qEl) qEl.textContent = questions.length;
+    }
+
+    function switchTeacherTab(tabName) {
+      const tabs = {
+        scores: document.getElementById('teacherTabScores'),
+        bank: document.getElementById('teacherTabBank'),
+        settings: document.getElementById('teacherTabSettings'),
+      };
+
+      const btns = {
+        scores: document.getElementById('tabBtnScores'),
+        bank: document.getElementById('tabBtnBank'),
+        settings: document.getElementById('tabBtnSettings'),
+      };
+
+      Object.keys(tabs).forEach((k) => {
+        if (tabs[k]) tabs[k].classList.add('hidden');
+        if (btns[k]) {
+          btns[k].className = 'px-4 py-2.5 rounded-xl text-sm font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer';
+        }
+      });
+
+      if (tabs[tabName]) tabs[tabName].classList.remove('hidden');
+      if (btns[tabName]) {
+        btns[tabName].className = 'px-4 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 text-white transition cursor-pointer';
+      }
+
+      updateDashboardStats();
+
+      if (tabName === 'scores') {
+        populateFilterClassOptions();
+        renderTeacherScores();
+      } else if (tabName === 'bank') {
+        renderQuestionBank();
+      } else if (tabName === 'settings') {
+        loadSettingsForm();
+      }
+    }
+
+    // ==================== REKAP NILAI & FILTER ====================
+    function populateFilterClassOptions() {
+      const gradeFilter = document.getElementById('filterGradeSelect').value;
+      const classFilter = document.getElementById('filterClassSelect');
+      const prevVal = classFilter.value;
+
+      classFilter.innerHTML = '<option value="">Semua Kelas</option>';
+
+      const gradesToShow = gradeFilter ? [gradeFilter] : ['7', '8', '9'];
+      gradesToShow.forEach((g) => {
+        CLASS_SECTIONS[g].forEach((sec) => {
+          const val = `${g}${sec}`;
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = `Kelas ${val}`;
+          classFilter.appendChild(opt);
+        });
+      });
+
+      if ([...classFilter.options].some((o) => o.value === prevVal)) {
+        classFilter.value = prevVal;
+      } else {
+        classFilter.value = '';
+      }
+    }
+
+    function handleFilterGradeChange() {
+      populateFilterClassOptions();
+      renderTeacherScores();
+    }
+
+    function getFilteredScores() {
+      const g = document.getElementById('filterGradeSelect').value;
+      const c = document.getElementById('filterClassSelect').value;
+      return getScores().filter((row) => {
+        if (g && String(row.grade) !== String(g)) return false;
+        if (c && String(row.studentClass) !== String(c)) return false;
+        return true;
+      });
+    }
+
+    function renderTeacherScores() {
+      updateDashboardStats();
+      const tbody = document.getElementById('scoresTableBody');
+      const rows = getFilteredScores();
+      tbody.innerHTML = '';
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="py-8 px-4 text-center text-slate-500">
+              Belum ada data nilai siswa yang sesuai filter.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-semibold text-slate-600">${i + 1}</td>
+          <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(r.name)}</td>
+          <td class="py-3 px-4">Kelas ${escapeHtml(String(r.grade || '-'))}</td>
+          <td class="py-3 px-4 font-semibold">${escapeHtml(r.studentClass || '-')}</td>
+          <td class="py-3 px-4 font-extrabold text-indigo-600">${r.score}</td>
+          <td class="py-3 px-4">${r.correctCount}/${r.totalQuestions}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold ${
+              r.violations > 0 ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+            }">${r.violations}x</span>
+          </td>
+          <td class="py-3 px-4 text-xs font-semibold">${escapeHtml(r.status)}</td>
+          <td class="py-3 px-4 text-xs text-slate-500">${escapeHtml(r.submittedAt)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportScoresCSV() {
+      const rows = getFilteredScores();
+      if (rows.length === 0) {
+        showAlert('Tidak ada data nilai untuk di-export.', 'warning');
+        return;
+      }
+
+      const header = ['No', 'Nama Siswa', 'Tingkatan', 'Kelas', 'Skor', 'Benar', 'Total Soal', 'Pelanggaran', 'Status', 'Waktu'];
+      const csvLines = [header.join(',')];
+
+      rows.forEach((r, idx) => {
+        const line = [
+          idx + 1,
+          `"${String(r.name).replace(/"/g, '""')}"`,
+          `"Kelas ${r.grade || ''}"`,
+          `"${r.studentClass || ''}"`,
+          r.score,
+          r.correctCount,
+          r.totalQuestions,
+          r.violations,
+          `"${String(r.status).replace(/"/g, '""')}"`,
+          `"${String(r.submittedAt).replace(/"/g, '""')}"`,
+        ];
+        csvLines.push(line.join(','));
+      });
+
+      const blob = new Blob(['\ufeff' + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rekap-nilai-matematika-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearAllScores() {
+      saveJSON(STORAGE_KEYS.SCORES, []);
+      renderTeacherScores();
+      showAlert('Semua rekap nilai siswa telah dihapus.', 'info');
+    }
+
+    // ==================== BANK SOAL & IMPOR ====================
+    function renderQuestionBank() {
+      updateDashboardStats();
+      const questions = getQuestions();
+      document.getElementById('bankCountBadge').textContent = questions.length;
+      const listEl = document.getElementById('questionBankList');
+      listEl.innerHTML = '';
+
+      const letters = ['A', 'B', 'C', 'D'];
+      questions.forEach((q, idx) => {
+        const div = document.createElement('div');
+        div.className = 'rounded-2xl border border-slate-200 p-4 bg-slate-50/50';
+        div.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="space-y-1.5 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-800">#${idx + 1}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">${escapeHtml(q.topic || 'Matematika')}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Kunci: ${letters[q.answerIndex] || 'A'}</span>
+              </div>
+              <div class="text-sm font-bold text-slate-900 pt-1">${escapeHtml(q.prompt)}</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-700 pt-1">
+                ${q.options.map((opt, oIdx) => `
+                  <div class="px-2.5 py-1.5 rounded-lg ${oIdx === q.answerIndex ? 'bg-emerald-50 border border-emerald-300 font-bold text-emerald-900' : 'bg-white border border-slate-200'}">
+                    <strong>${letters[oIdx]}.</strong> ${escapeHtml(opt)}
+                  </div>
+                `).join('')}
+              </div>
+              ${q.explanation ? `<p class="text-xs text-slate-500 pt-1"><strong>Pembahasan:</strong> ${escapeHtml(q.explanation)}</p>` : ''}
+            </div>
+            <button
+              type="button"
+              onclick="deleteQuestion('${q.id}')"
+              class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold shrink-0 cursor-pointer"
+            >
+              Hapus
+            </button>
+          </div>
+        `;
+        listEl.appendChild(div);
+      });
+
+      renderMath(listEl);
+    }
+
+    function insertMathSnippet(snippet) {
+      const promptInput = document.getElementById('newQPrompt');
+      if (!promptInput) return;
+      const start = promptInput.selectionStart || promptInput.value.length;
+      const end = promptInput.selectionEnd || promptInput.value.length;
+      promptInput.value = promptInput.value.slice(0, start) + snippet + promptInput.value.slice(end);
+      promptInput.focus();
+    }
+
+    function addManualQuestion(event) {
+      event.preventDefault();
+      const topic = document.getElementById('newQTopic').value.trim() || 'Matematika';
+      const prompt = document.getElementById('newQPrompt').value.trim();
+      const options = [
+        document.getElementById('newOpt0').value.trim(),
+        document.getElementById('newOpt1').value.trim(),
+        document.getElementById('newOpt2').value.trim(),
+        document.getElementById('newOpt3').value.trim(),
+      ];
+      const answerIndex = Number(document.getElementById('newQAnswer').value) || 0;
+      const explanation = document.getElementById('newQExplanation').value.trim();
+
+      if (!prompt || options.some((o) => !o)) {
+        showAlert('Lengkapi pertanyaan dan seluruh pilihan A–D.', 'error');
+        return;
+      }
+
+      const list = getQuestions();
+      list.push({
+        id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        topic,
+        prompt,
+        options,
+        answerIndex,
+        explanation,
+      });
+
+      saveJSON(STORAGE_KEYS.QUESTIONS, list);
+      event.target.reset();
+      document.getElementById('newQTopic').value = 'Aljabar';
+      renderQuestionBank();
+      showAlert('Soal baru berhasil ditambahkan ke Bank Soal.', 'success');
+    }
+
+    function deleteQuestion(id) {
+      const filtered = getQuestions().filter((q) => q.id !== id);
+      if (filtered.length === 0) {
+        showAlert('Minimal harus ada 1 soal aktif di Bank Soal.', 'warning');
+        return;
+      }
+      saveJSON(STORAGE_KEYS.QUESTIONS, filtered);
+      renderQuestionBank();
+    }
+
+    function resetDefaultQuestions() {
+      saveJSON(STORAGE_KEYS.QUESTIONS, DEFAULT_QUESTIONS);
+      renderQuestionBank();
+      showAlert('Bank soal dikembalikan ke soal bawaan Matematika.', 'info');
+    }
+
+    function exportQuestionsJSON() {
+      const data = {
+        exportedAt: new Date().toISOString(),
+        config: getConfig(),
+        questions: getQuestions(),
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bank-soal-matematika-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadExcelTemplate() {
+      if (!window.XLSX) {
+        showAlert('Library Excel belum termuat.', 'error');
+        return;
+      }
+      const rows = [
+        {
+          Topik: 'Aljabar',
+          Pertanyaan: 'Jika $3x - 4 = 11$, maka nilai $x$ adalah...',
+          'Opsi A': '3',
+          'Opsi B': '5',
+          'Opsi C': '7',
+          'Opsi D': '9',
+          Kunci: 'B',
+          Pembahasan: '$3x = 15$, maka $x = 5$.',
+        },
+        {
+          Topik: 'Geometri',
+          Pertanyaan: 'Luas persegi dengan sisi $9\\text{ cm}$ adalah...',
+          'Opsi A': '18 cm²',
+          'Opsi B': '36 cm²',
+          'Opsi C': '81 cm²',
+          'Opsi D': '72 cm²',
+          Kunci: 'C',
+          Pembahasan: 'Luas $= s^2 = 9^2 = 81\\text{ cm}^2$.',
+        },
+      ];
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'TemplateSoal');
+      XLSX.writeFile(wb, 'template-soal-matematika.xlsx');
+    }
+
+    function downloadWordTemplate() {
+      const content = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' charset='utf-8'>
+        <head><meta charset="utf-8"><title>Template Soal</title></head>
+        <body style="font-family: Calibri, Arial, sans-serif;">
+          <h3>Template Soal Ulangan Harian Matematika</h3>
+          <p>1. Hasil dari $5^2 - 3^2$ adalah...</p>
+          <p>A. 8</p>
+          <p>*B. 16</p>
+          <p>C. 22</p>
+          <p>D. 34</p>
+          <p>Pembahasan: $25 - 9 = 16$.</p>
+          <br/>
+          <p>2. Keliling lingkaran berdiameter $14\\text{ cm}$ ($\\pi = \\frac{22}{7}$) adalah...</p>
+          <p>A. 22 cm</p>
+          <p>B. 28 cm</p>
+          <p>*C. 44 cm</p>
+          <p>D. 154 cm</p>
+          <p>Pembahasan: $K = \\pi \\times d = \\frac{22}{7} \\times 14 = 44\\text{ cm}$.</p>
+        </body></html>
+      `;
+      const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template-soal-matematika.doc';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function handleImportFileSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      document.getElementById('importFileNameLabel').textContent = `File: ${file.name}`;
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      try {
+        if (['xlsx', 'xls', 'csv'].includes(ext)) {
+          const buffer = await file.arrayBuffer();
+          const wb = XLSX.read(buffer, { type: 'array' });
+          const firstSheet = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+          openImportPreview(parseExcelRows(rows));
+        } else if (ext === 'docx') {
+          if (!window.mammoth) throw new Error('Library Mammoth belum siap.');
+          const buffer = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+          openImportPreview(parseTextQuestions(result.value || ''));
+        } else if (ext === 'pdf') {
+          if (!window.pdfjsLib) throw new Error('Library PDF.js belum siap.');
+          const buffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+          let fullText = '';
+          for (let p = 1; p <= pdf.numPages; p++) {
+            const page = await pdf.getPage(p);
+            const tc = await page.getTextContent();
+            fullText += `\n${tc.items.map((item) => item.str).join(' ')}`;
+          }
+          openImportPreview(parseTextQuestions(fullText));
+        } else {
+          const txt = await file.text();
+          openImportPreview(parseTextQuestions(txt));
+        }
+      } catch (err) {
+        showAlert(`Gagal membaca file (${escapeHtml(file.name)}): ${escapeHtml(err.message || 'format tidak dikenali')}`, 'error');
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function parseExcelRows(rows) {
+      const letterMap = { A: 0, B: 1, C: 2, D: 3, '0': 0, '1': 1, '2': 2, '3': 3 };
+      const items = [];
+
+      rows.forEach((r, idx) => {
+        const prompt = String(r.Pertanyaan || r.Soal || r.Question || r.prompt || '').trim();
+        const opts = [
+          String(r['Opsi A'] || r.A || r.PilihanA || r.optionA || '').trim(),
+          String(r['Opsi B'] || r.B || r.PilihanB || r.optionB || '').trim(),
+          String(r['Opsi C'] || r.C || r.PilihanC || r.optionC || '').trim(),
+          String(r['Opsi D'] || r.D || r.PilihanD || r.optionD || '').trim(),
+        ];
+
+        if (!prompt || opts.filter(Boolean).length < 2) return;
+        while (opts.length < 4) opts.push('');
+
+        const rawKey = String(r.Kunci || r.Jawaban || r.Key || 'A').trim().toUpperCase();
+        const ansIdx = letterMap[rawKey] !== undefined ? letterMap[rawKey] : 0;
+
+        items.push({
+          id: `imp_${Date.now()}_${idx}`,
+          topic: String(r.Topik || r.Materi || r.Topic || 'Matematika').trim() || 'Matematika',
+          prompt,
+          options: opts,
+          answerIndex: ansIdx,
+          explanation: String(r.Pembahasan || r.Explanation || '').trim(),
+        });
+      });
+
+      return items;
+    }
+
+    function parseTextQuestions(rawText) {
+      const lines = rawText
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+      const items = [];
+      let current = null;
+
+      const questionStartRegex = /^(?:soal\s*)?\d+[\.)]\s*(.+)$/i;
+      const optionRegex = /^(\*)?\s*([A-Da-d])[\.)]\s*(.+)$/;
+      const keyRegex = /^(?:kunci|jawaban|kunci jawaban)\s*[:=]\s*\*?\s*([A-Da-d])/i;
+      const expRegex = /^(?:pembahasan|penjelasan)\s*[:=]\s*(.+)$/i;
+
+      lines.forEach((line) => {
+        const qMatch = line.match(questionStartRegex);
+        if (qMatch) {
+          if (current && current.prompt) {
+            finalizeParsedQuestion(current, items);
+          }
+          current = {
+            id: `imp_${Date.now()}_${items.length}`,
+            topic: 'Matematika',
+            prompt: qMatch[1].trim(),
+            options: ['', '', '', ''],
+            answerIndex: 0,
+            explanation: '',
+          };
+          return;
+        }
+
+        if (!current) return;
+
+        const optMatch = line.match(optionRegex);
+        if (optMatch) {
+          const hasStar = Boolean(optMatch[1]);
+          const letter = optMatch[2].toUpperCase();
+          const optIdx = { A: 0, B: 1, C: 2, D: 3 }[letter];
+          current.options[optIdx] = optMatch[3].trim();
+          if (hasStar) current.answerIndex = optIdx;
+          return;
+        }
+
+        const keyMatch = line.match(keyRegex);
+        if (keyMatch) {
+          const letter = keyMatch[1].toUpperCase();
+          current.answerIndex = { A: 0, B: 1, C: 2, D: 3 }[letter] ?? 0;
+          return;
+        }
+
+        const expMatch = line.match(expRegex);
+        if (expMatch) {
+          current.explanation = expMatch[1].trim();
+          return;
+        }
+
+        if (!current.options.some(Boolean)) {
+          current.prompt += ` ${line}`;
+        }
+      });
+
+      if (current && current.prompt) {
+        finalizeParsedQuestion(current, items);
+      }
+
+      return items;
+    }
+
+    function finalizeParsedQuestion(item, targetList) {
+      const filled = item.options.filter(Boolean);
+      if (filled.length < 2) return;
+      for (let i = 0; i < 4; i++) {
+        if (!item.options[i]) item.options[i] = '-';
+      }
+      targetList.push(item);
+    }
+
+    function parseRawTextToPreview() {
+      const txt = document.getElementById('rawTextImportInput').value.trim();
+      if (!txt) {
+        showAlert('Tempelkan teks soal terlebih dahulu sebelum memproses.', 'warning');
+        return;
+      }
+      openImportPreview(parseTextQuestions(txt));
+    }
+
+    function openImportPreview(items) {
+      if (!Array.isArray(items) || items.length === 0) {
+        showAlert(
+          'Tidak ada butir soal yang berhasil dikenali. Pastikan format soal bernomor (1., 2.) dan opsi berlabel (A., B., C., D.) atau gunakan template.',
+          'warning'
+        );
+        return;
+      }
+
+      importedPreviewList = items;
+      document.getElementById('previewCountSpan').textContent = items.length;
+      const sec = document.getElementById('importPreviewSection');
+      const listEl = document.getElementById('importPreviewList');
+      sec.classList.remove('hidden');
+      listEl.innerHTML = '';
+
+      const letters = ['A', 'B', 'C', 'D'];
+      items.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'rounded-2xl border border-indigo-200 bg-indigo-50/30 p-4 space-y-2';
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-extrabold text-indigo-900">Pratinjau #${idx + 1}</span>
+            <button
+              type="button"
+              onclick="removePreviewItem(${idx})"
+              class="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+            >
+              Hapus
+            </button>
+          </div>
+          <div class="text-sm font-bold text-slate-900">${escapeHtml(item.prompt)}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+            ${item.options.map((opt, oIdx) => `
+              <button
+                type="button"
+                onclick="setPreviewAnswer(${idx}, ${oIdx})"
+                class="text-left px-2.5 py-1.5 rounded-lg border cursor-pointer ${
+                  item.answerIndex === oIdx
+                    ? 'bg-emerald-100 border-emerald-400 text-emerald-950 font-bold'
+                    : 'bg-white border-slate-200 text-slate-700'
+                }"
+              >
+                ${letters[oIdx]}. ${escapeHtml(opt)} ${item.answerIndex === oIdx ? '✓' : ''}
+              </button>
+            `).join('')}
+          </div>
+          ${item.explanation ? `<div class="text-xs text-slate-600">Pembahasan: ${escapeHtml(item.explanation)}</div>` : ''}
+        `;
+        listEl.appendChild(card);
+      });
+
+      renderMath(listEl);
+    }
+
+    function setPreviewAnswer(qIdx, optIdx) {
+      if (!importedPreviewList[qIdx]) return;
+      importedPreviewList[qIdx].answerIndex = optIdx;
+      openImportPreview(importedPreviewList);
+    }
+
+    function removePreviewItem(qIdx) {
+      importedPreviewList.splice(qIdx, 1);
+      if (importedPreviewList.length === 0) {
+        cancelImportPreview();
+      } else {
+        openImportPreview(importedPreviewList);
+      }
+    }
+
+    function cancelImportPreview() {
+      importedPreviewList = [];
+      document.getElementById('importPreviewList').innerHTML = '';
+      document.getElementById('importPreviewSection').classList.add('hidden');
+      document.getElementById('importFileNameLabel').textContent = 'Klik untuk memilih file dari perangkat';
+    }
+
+    function commitImportedQuestions(mode = 'append') {
+      if (importedPreviewList.length === 0) return;
+      const cleanNew = importedPreviewList.map((q, i) => ({
+        id: `q_imp_${Date.now()}_${i}`,
+        topic: q.topic || 'Matematika',
+        prompt: q.prompt,
+        options: q.options,
+        answerIndex: Number(q.answerIndex) || 0,
+        explanation: q.explanation || '',
+      }));
+
+      const nextBank = mode === 'replace' ? cleanNew : [...getQuestions(), ...cleanNew];
+      saveJSON(STORAGE_KEYS.QUESTIONS, nextBank);
+      cancelImportPreview();
+      renderQuestionBank();
+      showAlert(
+        `${cleanNew.length} soal berhasil ${mode === 'replace' ? 'menggantikan Bank Soal' : 'ditambahkan ke Bank Soal'}.`,
+        'success'
+      );
+    }
+
+    // ==================== PENGATURAN UJIAN ====================
+    function loadSettingsForm() {
+      const cfg = getConfig();
+      document.getElementById('cfgTitle').value = cfg.title;
+      document.getElementById('cfgToken').value = cfg.token;
+      document.getElementById('cfgDuration').value = cfg.durationMinutes;
+      document.getElementById('cfgMaxViolations').value = cfg.maxViolations;
+      document.getElementById('cfgTeacherPin').value = cfg.teacherPin;
+      document.getElementById('cfgShowReview').checked = Boolean(cfg.showReview);
+    }
+
+    function saveExamSettings(event) {
+      event.preventDefault();
+      const updated = {
+        ...getConfig(),
+        title: document.getElementById('cfgTitle').value.trim() || DEFAULT_CONFIG.title,
+        token: document.getElementById('cfgToken').value.trim().toUpperCase() || DEFAULT_CONFIG.token,
+        durationMinutes: Math.max(1, Number(document.getElementById('cfgDuration').value) || 20),
+        maxViolations: Math.max(1, Number(document.getElementById('cfgMaxViolations').value) || 3),
+        teacherPin: document.getElementById('cfgTeacherPin').value.trim() || DEFAULT_CONFIG.teacherPin,
+        showReview: document.getElementById('cfgShowReview').checked,
+      };
+      saveJSON(STORAGE_KEYS.CONFIG, updated);
+      showAlert('Pengaturan ulangan berhasil disimpan!', 'success');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateDashboardStats();
+      renderMath(document.body);
+    });
+  </script>
+</body>
+</html>
